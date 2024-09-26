@@ -96,11 +96,11 @@ jobs:
       - name: Prune tagged images
         if: env.GIT_BRANCH_NAME == 'develop' || github.event_name == 'workflow_dispatch' || vars.DOCKER_BUILD_DEBUG == 'true'
         env:
-          AZ_REGISTRY_PASSWORD: ${{ secrets.AZ_REGISTRY_PASSWORD }}
+          AZ_REGISTRY_PASSWORD: ${{ secrets.REGISTRY_PASSWORD }}
           AZ_REGISTRY_PRUNE_ENABLE_TAGGED: ${{ vars.AZ_REGISTRY_PRUNE_ENABLE_TAGGED || 'false'}}
           AZ_REGISTRY_PRUNE_DAYS_TAGGED: ${{ vars.AZ_REGISTRY_PRUNE_DAYS_TAGGED || '20' }}
           AZ_REGISTRY_REPOSITORY: ${{ matrix.AZ_REGISTRY_REPOSITORY }}
-          AZ_REGISTRY_USERNAME: ${{ secrets.AZ_REGISTRY_USERNAME }}
+          AZ_REGISTRY_USERNAME: ${{ secrets.REGISTRY_USERNAME }}
         run: |
           if [ ${AZ_REGISTRY_PRUNE_DAYS_TAGGED} = 0 ]; then
             AZ_REGISTRY_PRUNE_TIMESTAMP=$(date -u -Is)
@@ -139,9 +139,9 @@ jobs:
         env:
           AZ_REGISTRY_PRUNE_ENABLE_UNTAGGED: ${{ vars.AZ_REGISTRY_PRUNE_ENABLE_UNTAGGED || 'false' }}
           AZ_REGISTRY_PRUNE_DAYS_UNTAGGED: ${{ vars.AZ_REGISTRY_PRUNE_DAYS_UNTAGGED || '7' }}
-          AZ_REGISTRY_PASSWORD: ${{ secrets.AZ_REGISTRY_PASSWORD }}
+          AZ_REGISTRY_PASSWORD: ${{ secrets.REGISTRY_PASSWORD }}
           AZ_REGISTRY_REPOSITORY: ${{ matrix.AZ_REGISTRY_REPOSITORY }}
-          AZ_REGISTRY_USERNAME: ${{ secrets.AZ_REGISTRY_USERNAME }}
+          AZ_REGISTRY_USERNAME: ${{ secrets.REGISTRY_USERNAME }}
         run: |
           if [ ${AZ_REGISTRY_PRUNE_DAYS_UNTAGGED} = 0 ]; then
             AZ_REGISTRY_PRUNE_TIMESTAMP=$(date -u -Is)
