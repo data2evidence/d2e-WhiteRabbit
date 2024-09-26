@@ -6,7 +6,7 @@ on:
     types: [opened, reopened, ready_for_review, synchronize]
   push:
     branches:
-      - develop
+      - master
   workflow_dispatch:
     inputs:
       GIT_REPO_FULL_NAME:
@@ -16,7 +16,7 @@ on:
         options:
           - alp-os/WhiteRabbit
       GIT_BRANCH_NAME:
-        default: develop
+        default: master
         description: Enter BranchName
         required: true
         type: string
@@ -65,7 +65,7 @@ jobs:
           DOCKER_BUILD_PUSH_BOOL_OVERRIDE: ${{ vars.DOCKER_BUILD_PUSH_BOOL_OVERRIDE || false }}
         run: |
           DOCKER_BUILD_PUSH_BOOL_STR=false
-          if [ $DOCKER_BUILD_PUSH_BOOL_OVERRIDE = "true" ] || [ $GITHUB_EVENT_NAME = "workflow_dispatch" ] || [ $GIT_BRANCH_NAME = 'develop' ]; then
+          if [ $DOCKER_BUILD_PUSH_BOOL_OVERRIDE = "true" ] || [ $GITHUB_EVENT_NAME = "workflow_dispatch" ] || [ $GIT_BRANCH_NAME = 'master' ]; then
             DOCKER_BUILD_PUSH_BOOL_STR=true
           fi
 
@@ -91,7 +91,7 @@ jobs:
             GITHUB_PAT=${{ secrets.CI_PAT }}
 
       # - name: Prune tagged images
-      #   if: env.GIT_BRANCH_NAME == 'develop' || github.event_name == 'workflow_dispatch' || vars.DOCKER_BUILD_DEBUG == 'true'
+      #   if: env.GIT_BRANCH_NAME == 'master' || github.event_name == 'workflow_dispatch' || vars.DOCKER_BUILD_DEBUG == 'true'
       #   env:
       #     AZ_REGISTRY_PASSWORD: ${{ secrets.REGISTRY_PASSWORD }}
       #     AZ_REGISTRY_PRUNE_ENABLE_TAGGED: ${{ vars.AZ_REGISTRY_PRUNE_ENABLE_TAGGED || 'false'}}
