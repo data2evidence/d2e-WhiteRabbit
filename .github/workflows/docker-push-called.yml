@@ -44,7 +44,7 @@ jobs:
         include:
           - AZ_REGISTRY_REPOSITORY: ${{ vars.AZ_REGISTRY_REPOSITORY }}
             DOCKER_BUILD_CONTEXT_PATH: .
-            DOCKER_BUILD_FILE_PATH: ./Dockerfile.test
+            DOCKER_BUILD_FILE_PATH: ./Dockerfile
             DOCKER_BUILD_TAGS: ${{ vars.AZ_REGISTRY_NAME }}.azurecr.io/${{ vars.AZ_REGISTRY_REPOSITORY }}:${{ github.event.inputs.GIT_BRANCH_NAME || github.head_ref || github.ref_name }}
 
     steps:

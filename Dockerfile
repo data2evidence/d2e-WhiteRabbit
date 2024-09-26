@@ -8,12 +8,13 @@ COPY pom.xml .
 COPY lib lib
 
 COPY rabbit-core rabbit-core
+COPY rabbitinahat rabbitinahat
 COPY whiterabbit whiterabbit
 COPY whiteRabbitService whiteRabbitService
 
 RUN tr -d '\015' <./mvnw >./mvnw.sh && mv ./mvnw.sh ./mvnw && chmod 770 mvnw
 RUN ./mvnw dependency:go-offline -B
-RUN ./mvnw -B package
+RUN ./mvnw -B clean package
 
 FROM openjdk:17
 
