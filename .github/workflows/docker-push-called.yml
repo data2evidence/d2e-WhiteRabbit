@@ -51,7 +51,6 @@ jobs:
         with:
           ref: ${{ env.GIT_BRANCH_NAME }}
           repository: ${{ env.GIT_REPO_FULL_NAME }}
-          # token: ${{ secrets.CI_PAT }}
 
       - uses: docker/login-action@v3
         with:
@@ -87,8 +86,6 @@ jobs:
           platforms: ${{ steps.setup.outputs.DOCKER_BUILD_PLATFORMS }}
           push: ${{ steps.setup.outputs.DOCKER_BUILD_PUSH_BOOL_STR }}
           tags: ${{ matrix.DOCKER_BUILD_TAGS }}
-          # build-args: |
-          #   GITHUB_PAT=${{ secrets.CI_PAT }}
 
       # - name: Prune tagged images
       #   if: env.GIT_BRANCH_NAME == 'master' || github.event_name == 'workflow_dispatch' || vars.DOCKER_BUILD_DEBUG == 'true'
