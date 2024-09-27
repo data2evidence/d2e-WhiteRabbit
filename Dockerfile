@@ -22,10 +22,6 @@ VOLUME /tmp
 
 ARG JAR_FILE=/workspace/app/whiteRabbitService/target/*.jar
 
-RUN microdnf module enable postgresql:13
-RUN microdnf install postgresql.x86_64
-
-COPY --chown=docker:docker --chmod=711 init.sh .
 COPY --from=build ${JAR_FILE} app.jar
 
 EXPOSE 8000
