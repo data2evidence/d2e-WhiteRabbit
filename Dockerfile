@@ -19,11 +19,14 @@ RUN ./mvnw -B clean package
 FROM openjdk:17
 
 VOLUME /tmp
+# Create the scan-reports directory with the necessary permissions
+RUN mkdir -p /workspace/app/scan-reports && chmod -R 777 /workspace/app/scan-reports
+
 
 ARG JAR_FILE=/workspace/app/whiteRabbitService/target/*.jar
 
 RUN microdnf module enable postgresql:13
-RUN microdnf install postgresql.x86_64
+RUN microdnf install postgresql
 
 COPY --chown=docker:docker --chmod=711 init.sh .
 COPY --from=build ${JAR_FILE} app.jar
