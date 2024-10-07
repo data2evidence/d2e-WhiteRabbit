@@ -14,7 +14,7 @@ on:
         required: false
         type: choice
         options:
-          - alp-os/WhiteRabbit
+          - alp-os/alp-WhiteRabbit
       GIT_BRANCH_NAME:
         default: master
         description: Enter BranchName
