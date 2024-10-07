@@ -27,6 +27,8 @@ public class ReportGeneratorController {
   @PostMapping("/word")
     public ResponseEntity<byte[]> generateWordReport_test(@RequestBody JsonNode jsonNode) {
         try {
+            // Disable headless mode
+            System.setProperty("java.awt.headless", "false");
             ByteArrayOutputStream wordDocument = reportGenerationService.generateWordReport(jsonNode);
             // Return the file as a response
             HttpHeaders headers = new HttpHeaders();
@@ -40,6 +42,9 @@ public class ReportGeneratorController {
             log.debug(String.format("Some bug happens %s", e));
             System.out.println(String.format("Some bug happens %s", e));
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        } finally {
+            // Reset headless mode to the true
+            System.setProperty("java.awt.headless", "true");
         }
     }
   
