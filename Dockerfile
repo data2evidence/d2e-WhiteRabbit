@@ -22,7 +22,6 @@ FROM debian:bookworm
 ENV DISPLAY=:1
 
 RUN apt-get update && apt-get install -y \
-    postgresql-client \
     openjdk-17-jdk \
     xvfb
 
