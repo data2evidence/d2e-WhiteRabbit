@@ -3,6 +3,7 @@ package com.arcadia.whiteRabbitService.service;
 import com.arcadia.whiteRabbitService.service.error.InternalServerErrorException;
 import com.arcadia.whiteRabbitService.service.request.FileSaveRequest;
 import com.arcadia.whiteRabbitService.service.response.FileSaveResponse;
+import com.arcadia.whiteRabbitService.web.context.RequestContext;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -16,6 +17,7 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import static org.springframework.http.MediaType.MULTIPART_FORM_DATA;
 
@@ -27,6 +29,9 @@ public class FilesManagerServiceImpl implements FilesManagerService {
     private String filesManagerUrl;
 
     private final RestTemplate restTemplate;
+
+    @Autowired
+    private RequestContext requestContext;
 
     @Override
     public Resource getFile(Long userDataId) {
@@ -47,6 +52,7 @@ public class FilesManagerServiceImpl implements FilesManagerService {
         log.info("Sending Rest request to save scan report file...");
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MULTIPART_FORM_DATA);
+        headers.set("Authorization", requestContext.getToken());
 
         MultiValueMap<String, Object> map = new LinkedMultiValueMap<>();
         map.add("username", model.getUsername());
