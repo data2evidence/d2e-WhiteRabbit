@@ -62,7 +62,7 @@ public class ScanDataController {
 
     @PostMapping("/files")
     public ResponseEntity<ScanDataConversion> generate(@RequestHeader("Username") String username,
-                                                        @RequestHeader("Authorization") String token,
+                                                       @RequestHeader("Authorization") String token,
                                                        @RequestParam String settings,
                                                        @RequestParam List<MultipartFile> files) {
         log.info("Rest request to generate scan report by files settings");
@@ -128,8 +128,12 @@ public class ScanDataController {
 
     @GetMapping("/result-as-resource/{conversionId}")
     public ResponseEntity<Resource> downloadScanReport(@RequestHeader("Username") String username,
+                                                       @RequestHeader("Authorization") String token,
                                                        @PathVariable Long conversionId) {
         log.info("Rest request to download scan report with conversion id {}", conversionId);
+
+        requestContext.setToken(token);
+
         ScanDataResult result = scanDataService.result(conversionId, username);
         Resource resource = filesManagerService.getFile(result.getFileId());
         return ok()
