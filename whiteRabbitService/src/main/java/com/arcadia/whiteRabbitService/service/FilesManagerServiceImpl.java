@@ -11,6 +11,7 @@ import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
@@ -35,12 +36,21 @@ public class FilesManagerServiceImpl implements FilesManagerService {
 
     @Override
     public Resource getFile(Long userDataId) {
+        log.info("Sending Rest request to get scan report file...");
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("Authorization", requestContext.getToken());
+
         try {
-            return restTemplate.getForObject(
-                    filesManagerUrl + "/api/{userDataId}",
-                    ByteArrayResource.class,
-                    userDataId
-            );
+            HttpEntity<String> requestEntity = new HttpEntity<>(headers);
+            ResponseEntity<ByteArrayResource> response = restTemplate.exchange(
+                filesManagerUrl + "/api/{userDataId}", 
+                HttpMethod.GET,
+                requestEntity,
+                ByteArrayResource.class,
+                userDataId
+                );
+            Resource resource = response.getBody();
+            return resource;
         } catch (RestClientException e) {
             log.error("Error when connect to File Manager: {}. Stack trace: {}", e.getMessage(), e.getStackTrace());
             throw new InternalServerErrorException("Error when connect to File Manager: " + e.getMessage(), e);
@@ -75,8 +85,19 @@ public class FilesManagerServiceImpl implements FilesManagerService {
 
     @Override
     public void deleteFile(String key) {
+        log.info("Sending Rest request to delete scan report file...");
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("Authorization", requestContext.getToken());
+
         try {
-            restTemplate.delete(filesManagerUrl + "/api/${key}", key);
+            HttpEntity<String> requestEntity = new HttpEntity<>(headers);
+            restTemplate.exchange(
+                filesManagerUrl + "/api/{key}", 
+                HttpMethod.DELETE, 
+                requestEntity,
+                Void.class, 
+                key
+                );
         } catch (RestClientException e) {
             log.error("Error when connect to File Manager: {}. Stack trace: {}", e.getMessage(), e.getStackTrace());
             throw new InternalServerErrorException("Error when connect to File Manager: " + e.getMessage(), e);
