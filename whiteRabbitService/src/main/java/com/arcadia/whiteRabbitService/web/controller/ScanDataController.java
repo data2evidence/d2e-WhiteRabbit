@@ -12,6 +12,7 @@ import com.arcadia.whiteRabbitService.service.error.BadRequestException;
 import com.arcadia.whiteRabbitService.service.error.InternalServerErrorException;
 import com.arcadia.whiteRabbitService.service.response.ConversionWithLogsResponse;
 import com.arcadia.whiteRabbitService.service.response.ScanReportResponse;
+import com.arcadia.whiteRabbitService.web.context.RequestContext;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -22,6 +23,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -46,6 +48,9 @@ public class ScanDataController {
     private final FilesManagerService filesManagerService;
     private final StorageService storageService;
 
+    @Autowired
+    private RequestContext requestContext;
+
     @PostMapping("/db")
     public ResponseEntity<ScanDataConversion> generate(@RequestHeader("Username") String username,
                                                        @Validated @RequestBody ScanDbSettings dbSetting) {
@@ -57,9 +62,13 @@ public class ScanDataController {
 
     @PostMapping("/files")
     public ResponseEntity<ScanDataConversion> generate(@RequestHeader("Username") String username,
+                                                       @RequestHeader("Authorization") String token,
                                                        @RequestParam String settings,
                                                        @RequestParam List<MultipartFile> files) {
         log.info("Rest request to generate scan report by files settings");
+
+        requestContext.setToken(token);
+
         if (files.size() > MAX_TABLES_COUNT) {
             throw new BadRequestException(format("Too many files. Max count is %d.", MAX_TABLES_COUNT));
         }
@@ -119,8 +128,12 @@ public class ScanDataController {
 
     @GetMapping("/result-as-resource/{conversionId}")
     public ResponseEntity<Resource> downloadScanReport(@RequestHeader("Username") String username,
+                                                       @RequestHeader("Authorization") String token,
                                                        @PathVariable Long conversionId) {
         log.info("Rest request to download scan report with conversion id {}", conversionId);
+
+        requestContext.setToken(token);
+
         ScanDataResult result = scanDataService.result(conversionId, username);
         Resource resource = filesManagerService.getFile(result.getFileId());
         return ok()
