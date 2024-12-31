@@ -7,6 +7,7 @@ on:
   push:
     branches:
       - master
+      - push-to-correct-repository
   workflow_dispatch:
     inputs:
       GIT_REPO_FULL_NAME:
