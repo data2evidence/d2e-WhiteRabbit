@@ -53,8 +53,12 @@ public class ScanDataController {
 
     @PostMapping("/db")
     public ResponseEntity<ScanDataConversion> generate(@RequestHeader("Username") String username,
+                                                       @RequestHeader("Authorization") String token,
                                                        @Validated @RequestBody ScanDbSettings dbSetting) {
         log.info("Rest request to generate scan report by database settings");
+
+        requestContext.setToken(token);
+        
         ScanDataConversion conversion = scanDataService.createScanDatabaseConversion(dbSetting, username);
         conversionService.runConversion(conversion);
         return ok(conversion);
