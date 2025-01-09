@@ -197,7 +197,7 @@ public class RichConnection implements Closeable {
                 else if (dbType == DbType.DATABRICKS)
 			qr = query("SELECT COUNT(*) FROM " + schema + "." + tableName + ";");
 		else
-			qr = query("SELECT COUNT(*) FROM " + tableName + ";");
+			qr = query("SELECT COUNT(*) FROM \"" + tableName + "\";");
 		try {
 			returnVal = Long.parseLong(qr.iterator().next().getCells().get(0));
 		} catch (Exception e) {
@@ -284,8 +284,7 @@ public class RichConnection implements Closeable {
 		columns = rows.get(0).getFieldNames();
 		for (int i = 0; i < columns.size(); i++)
 			columns.set(i, columnNameToSqlName(columns.get(i)));
-
-		StringBuilder sql = new StringBuilder("INSERT INTO " + tableName);
+		StringBuilder sql = new StringBuilder("INSERT INTO \"" + tableName + "\"");
 		sql.append(" (").append(StringUtilities.join(columns, ",")).append(")");
 		sql.append(" VALUES (?");
 		for (int i = 1; i < columns.size(); i++)
