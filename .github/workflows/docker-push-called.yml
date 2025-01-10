@@ -1,9 +1,13 @@
-name: Docker Build, Push, Prune
+name: Docker Build Push
 run-name: ${{ github.event.inputs.GIT_BRANCH_NAME || github.head_ref || github.ref_name }}
 
 on:
   pull_request:
-    types: [opened, reopened, ready_for_review, synchronize]
+    types:
+      - opened
+      - ready_for_review
+      - reopened
+      - synchronize
   push:
     branches:
       - master
@@ -21,42 +25,42 @@ on:
         required: true
         type: string
 
+# Run only one job per branch
 concurrency:
   group: ${{ github.event.inputs.GIT_BRANCH_NAME || github.head_ref || github.ref_name }}-${{ github.event_name }}-docker-build
-  cancel-in-progress: true
-
-env: # workflow_dispatch || pull_request || push
-  AZ_REGISTRY_NAME: ${{ vars.AZ_REGISTRY_NAME }}
-  AZ_REGISTRY_REPOSITORY: ${{ vars.AZ_REGISTRY_REPOSITORY }}
-  AZ_REGISTRY_WHITELIST_REGEX: ${{ vars.AZ_REGISTRY_WHITELIST_REGEX }}
-  GIT_BRANCH_NAME: ${{ github.event.inputs.GIT_BRANCH_NAME || github.head_ref || github.ref_name }}
-  GIT_REPO_FULL_NAME: ${{ github.event.inputs.GIT_REPO_FULL_NAME || github.event.pull_request.head.repo.full_name || github.event.repository.full_name }}
+  cancel-in-progress: ${{ (github.head_ref || github.ref_name) != 'master' }} # except for master branch
 
 jobs:
   bld:
     runs-on: ubuntu-latest
-    # runs-on: self-hosted
     timeout-minutes: 1440
+    env:
+      AZ_REG_FQDN: ${{ vars.AZ_REGISTRY_NAME }}.azurecr.io
+      AZ_REG_NAME: ${{ vars.AZ_REGISTRY_NAME }}
+      AZ_REG_PASSWORD: ${{ secrets.AZ_REGISTRY_PASSWORD }}
+      AZ_REG_PRUNE_DAYS: ${{ vars.AZ_REG_PRUNE_DAYS || '20' }}
+      AZ_REG_PRUNE_ENABLE_DELETE: ${{ vars.AZ_REG_PRUNE_ENABLE_DELETE || 'false' }}
+      AZ_REG_PRUNE_FORCE_ANALYZE: ${{ vars.AZ_REG_PRUNE_FORCE_ANALYZE || 'false' }}
+      AZ_REG_PRUNE_KEEP_REGEX: ${{ vars.AZ_REG_PRUNE_KEEP_REGEX }}
+      AZ_REG_USERNAME: ${{ vars.AZ_REGISTRY_USERNAME }}
+      DOCKER_BUILD_DISABLE: ${{ vars.DOCKER_BUILD_DISABLE || 'false' }}
+      DOCKER_BUILD_PUSH_BOOL_OVERRIDE: ${{ vars.DOCKER_BUILD_PUSH_BOOL_OVERRIDE || 'false' }}
+      GIT_BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
+      GIT_REPO_FULL_NAME: ${{ github.event.inputs.GIT_REPO_FULL_NAME || github.event.pull_request.head.repo.full_name || github.event.repository.full_name }} # workflow_dispatch || pull_request || push
+
     strategy:
       fail-fast: false
       matrix:
         include:
-          - AZ_REGISTRY_REPOSITORY: ${{ vars.AZ_REGISTRY_REPOSITORY }}
+          - AZ_REG_REPOSITORY: alp-data-node/alp-perseus-white-rabbit
             DOCKER_BUILD_CONTEXT_PATH: .
-            DOCKER_BUILD_FILE_PATH: ./Dockerfile
-            DOCKER_BUILD_TAGS: ${{ vars.AZ_REGISTRY_NAME }}.azurecr.io/${{ vars.AZ_REGISTRY_REPOSITORY }}:${{ github.event.inputs.GIT_BRANCH_NAME || github.head_ref || github.ref_name }}
+            DOCKER_BUILD_FILE_PATH: ./dataflow-gen-base/Dockerfile
 
     steps:
       - uses: actions/checkout@v4
         with:
           ref: ${{ env.GIT_BRANCH_NAME }}
           repository: ${{ env.GIT_REPO_FULL_NAME }}
-
-      - uses: docker/login-action@v3
-        with:
-          registry: ${{ vars.AZ_REGISTRY_NAME }}.azurecr.io
-          username: ${{ secrets.REGISTRY_USERNAME }}
-          password: ${{ secrets.REGISTRY_PASSWORD }}
 
       - name: setup
         id: setup
@@ -71,99 +75,60 @@ jobs:
           echo "DOCKER_BUILD_PLATFORMS=linux/amd64" | tee -a $GITHUB_ENV | tee -a $GITHUB_OUTPUT | tee -a $GITHUB_STEP_SUMMARY
           echo "DOCKER_BUILD_PUSH_BOOL_STR=$DOCKER_BUILD_PUSH_BOOL_STR" | tee -a $GITHUB_ENV | tee -a $GITHUB_OUTPUT | tee -a $GITHUB_STEP_SUMMARY
 
-      - uses: docker/setup-qemu-action@v3
+          echo AZ_REG_REPOSITORY=${{ matrix.AZ_REG_REPOSITORY }} | tee -a $GITHUB_ENV | tee -a $GITHUB_OUTPUT | tee -a $GITHUB_STEP_SUMMARY
+          echo DOCKER_BUILD_CONTEXT_PATH=${{ matrix.DOCKER_BUILD_CONTEXT_PATH }} | tee -a $GITHUB_ENV | tee -a $GITHUB_OUTPUT | tee -a $GITHUB_STEP_SUMMARY
+          echo DOCKER_BUILD_FILE_PATH=${{ matrix.DOCKER_BUILD_FILE_PATH }} | tee -a $GITHUB_ENV | tee -a $GITHUB_OUTPUT | tee -a $GITHUB_STEP_SUMMARY
+          echo DOCKER_BUILD_TAGS=${{ matrix.DOCKER_BUILD_TAGS }} | tee -a $GITHUB_ENV | tee -a $GITHUB_OUTPUT | tee -a $GITHUB_STEP_SUMMARY
 
-      - uses: docker/setup-buildx-action@v3
+      - name: Login to ACR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.AZ_REG_FQDN }}
+          username: ${{ env.AZ_REG_USERNAME }}
+          password: ${{ env.AZ_REG_PASSWORD }}
+
+      - uses: docker/setup-qemu-action@v3
+        if: env.DOCKER_BUILD_DISABLE == 'false'
+
+      - name: Set up Docker Buildx
+        if: env.DOCKER_BUILD_DISABLE == 'false'
+        uses: docker/setup-buildx-action@v3
         id: builder
 
       - name: Build and push
         uses: docker/build-push-action@v6
-        if: ${{ vars.DOCKER_BUILD_DISABLE != 'true' }}
+        if: env.DOCKER_BUILD_DISABLE == 'false'
+        id: build_push
+        continue-on-error: false
         with:
           builder: ${{ steps.builder.outputs.name }}
           context: ${{ matrix.DOCKER_BUILD_CONTEXT_PATH }}
           file: ${{ matrix.DOCKER_BUILD_FILE_PATH }}
-          platforms: ${{ steps.setup.outputs.DOCKER_BUILD_PLATFORMS }}
-          push: ${{ steps.setup.outputs.DOCKER_BUILD_PUSH_BOOL_STR }}
-          tags: ${{ matrix.DOCKER_BUILD_TAGS }}
+          platforms: ${{ env.DOCKER_BUILD_PLATFORMS }}
+          push: ${{ env.DOCKER_BUILD_PUSH_BOOL_STR }}
+          tags: ${{ env.AZ_REG_FQDN }}/${{ matrix.AZ_REG_REPOSITORY }}:${{ github.event.inputs.GIT_BRANCH_NAME || github.head_ref || github.ref_name }}
+          build-args: |
+            GIT_COMMIT_ARG=${{ github.sha }}
 
-      # - name: Prune tagged images
-      #   if: env.GIT_BRANCH_NAME == 'master' || github.event_name == 'workflow_dispatch' || vars.DOCKER_BUILD_DEBUG == 'true'
-      #   env:
-      #     AZ_REGISTRY_PASSWORD: ${{ secrets.REGISTRY_PASSWORD }}
-      #     AZ_REGISTRY_PRUNE_ENABLE_TAGGED: ${{ vars.AZ_REGISTRY_PRUNE_ENABLE_TAGGED || 'false'}}
-      #     AZ_REGISTRY_PRUNE_DAYS_TAGGED: ${{ vars.AZ_REGISTRY_PRUNE_DAYS_TAGGED || '20' }}
-      #     AZ_REGISTRY_REPOSITORY: ${{ matrix.AZ_REGISTRY_REPOSITORY }}
-      #     AZ_REGISTRY_USERNAME: ${{ secrets.REGISTRY_USERNAME }}
-      #   run: |
-      #     if [ ${AZ_REGISTRY_PRUNE_DAYS_TAGGED} = 0 ]; then
-      #       AZ_REGISTRY_PRUNE_TIMESTAMP=$(date -u -Is)
-      #     else
-      #       TODAY=$(date +%Y-%m-%d)
-      #       AZ_REGISTRY_PRUNE_TIMESTAMP="$(date -d "$TODAY - ${AZ_REGISTRY_PRUNE_DAYS_TAGGED} days" +%Y-%m-%d)"
-      #     fi
-      #     echo AZ_REGISTRY_PRUNE_TIMESTAMP=$AZ_REGISTRY_PRUNE_TIMESTAMP | tee -a $GITHUB_STEP_SUMMARY
+      - name: Prune ACR Images created before vars.AZ_REG_PRUNE_DAYS_TAGGED
+        if: env.AZ_REG_PRUNE_FORCE_ANALYZE == 'true' || env.GIT_BRANCH_NAME == 'master'
+        id: prune
+        continue-on-error: true
+        run: |
+          npx --suppess-warnings zx scripts/analyze-acr.mjs
+          if [ $AZ_REG_PRUNE_ENABLE_DELETE = true ]; then
+            echo "INFO . manifests delete ..."
+            sh "private-acr-manifests-delete.sh"
+          else
+            echo "INFO . manifests delete skipped"
+          fi
+          echo AZ_REG_ARTIFACTS_NAME=${AZ_REG_REPOSITORY/\//--} | tee -a $GITHUB_ENV | tee -a $GITHUB_OUTPUT | tee -a $GITHUB_STEP_SUMMARY
 
-      #     echo ". 1 - GET manifest metadata -  deprecated warning is not relevant"
-      #     az acr manifest metadata list --only-show-errors --name ${AZ_REGISTRY_REPOSITORY} --registry ${AZ_REGISTRY_NAME} --username "${AZ_REGISTRY_USERNAME}" --password "${AZ_REGISTRY_PASSWORD}" --orderby time_asc --query "[?lastUpdateTime < '${AZ_REGISTRY_PRUNE_TIMESTAMP}' && not_null(tags)]" > private-tagged.json
-      #     wc -l private-tagged.json
-
-      #     echo ". 2 - ANALYZE each tag as deletable True/False - show first 20"
-      #     cat private-tagged.json | yq -rP 'map({"digest":.digest, "tags":(.tags|@json),"count":(.tags|length),"lengths":([.tags[]|length]|@json),"deletable":(.tags|map(test(env(AZ_REGISTRY_WHITELIST_REGEX))|not)|@json)})' | tee private1-analysis.yml | yq '.[0:20]'
-
-      #     echo ". 3 - ACTION lock manifests with deletable False i.e. tags matching RegEx"
-      #     cat private1-analysis.yml | yq 'map(select(.deletable|contains("false")).digest) | .[]' | xargs -I% az acr repository update -u ${AZ_REGISTRY_USERNAME} -p ${AZ_REGISTRY_PASSWORD} --name ${AZ_REGISTRY_NAME} --image ${AZ_REGISTRY_REPOSITORY}@% --delete-enabled false --write-enabled true --query 'tags' --output tsv || true
-
-      #     echo ". 4 - SELECT images to be deleted i.e. manifests excepting deletable False i.e. tags not matching RegEx"
-      #     cat private1-analysis.yml | yq 'map(select(.deletable|contains("false")|not))' > private2-todelete.yml
-      #     echo . INFO for deletion - BranchNames
-      #     cat private2-todelete.yml | yq -P 'map(select(.lengths!="[40]") | .tags | @jsond)'
-      #     echo . INFO for deletion - single tag commitIds
-      #     cat private2-todelete.yml | yq -P 'map(select(.lengths=="[40]") | .tags | @jsond)'
-
-      #     if [ "${AZ_REGISTRY_PRUNE_ENABLE_TAGGED}" = true ]; then
-      #       echo ". 5 - ACTION delete tagged digests ..."
-      #       yq '.[].digest' private2-todelete.yml | sort -u | xargs -I% az acr repository delete -u ${AZ_REGISTRY_USERNAME} -p ${AZ_REGISTRY_PASSWORD} --name ${AZ_REGISTRY_NAME} --image ${AZ_REGISTRY_REPOSITORY}@% --yes
-      #     else
-      #       echo ". 5 - SKIPPED delete digests ..."
-      #     fi
-
-      # - name: Prune untagged images
-      #   if: always()
-      #   env:
-      #     AZ_REGISTRY_PRUNE_ENABLE_UNTAGGED: ${{ vars.AZ_REGISTRY_PRUNE_ENABLE_UNTAGGED || 'false' }}
-      #     AZ_REGISTRY_PRUNE_DAYS_UNTAGGED: ${{ vars.AZ_REGISTRY_PRUNE_DAYS_UNTAGGED || '7' }}
-      #     AZ_REGISTRY_PASSWORD: ${{ secrets.REGISTRY_PASSWORD }}
-      #     AZ_REGISTRY_REPOSITORY: ${{ matrix.AZ_REGISTRY_REPOSITORY }}
-      #     AZ_REGISTRY_USERNAME: ${{ secrets.REGISTRY_USERNAME }}
-      #   run: |
-      #     if [ ${AZ_REGISTRY_PRUNE_DAYS_UNTAGGED} = 0 ]; then
-      #       AZ_REGISTRY_PRUNE_TIMESTAMP=$(date -u -Is)
-      #     else
-      #       TODAY=$(date +%Y-%m-%d)
-      #       AZ_REGISTRY_PRUNE_TIMESTAMP="$(date -d "$TODAY - ${AZ_REGISTRY_PRUNE_DAYS_UNTAGGED} days" +%Y-%m-%d)"
-      #     fi
-      #     echo AZ_REGISTRY_PRUNE_TIMESTAMP=$AZ_REGISTRY_PRUNE_TIMESTAMP
-
-      #     echo . INFO for deletion - untagged
-      #     az acr manifest metadata list --only-show-errors --registry ${AZ_REGISTRY_NAME} --name ${AZ_REGISTRY_REPOSITORY} --username "${AZ_REGISTRY_USERNAME}" --password "${AZ_REGISTRY_PASSWORD}" --orderby time_asc --query "[?lastUpdateTime < '${AZ_REGISTRY_PRUNE_TIMESTAMP}' && tags[0]==null]" -o json > private-tagged.json
-      #     cat private-tagged.json | yq 'map({ "digest": .digest,"tags": .tags | @json })'
-
-      #     if [ "${AZ_REGISTRY_PRUNE_ENABLE_UNTAGGED}" = true ]; then
-      #       echo ". ACTION delete untagged digests ..."
-      #       cat private-tagged.json | yq '.[].digest' | xargs -I% az acr repository delete -n ${AZ_REGISTRY_NAME} --username "${AZ_REGISTRY_USERNAME}" --password "${AZ_REGISTRY_PASSWORD}" -t ${AZ_REGISTRY_REPOSITORY}@% -y || true
-      #     else
-      #       echo ". 5 - SKIPPED delete digests ..."
-      #     fi
-
-      # - name: Test tags matching RegEx
-      #   if: vars.DOCKER_BUILD_DEBUG == 'true'
-      #   env:
-      #     AZ_REGISTRY_PASSWORD: ${{ secrets.AZ_REGISTRY_PASSWORD }}
-      #     AZ_REGISTRY_REPOSITORY: ${{ matrix.AZ_REGISTRY_REPOSITORY }}
-      #     AZ_REGISTRY_USERNAME: ${{ secrets.AZ_REGISTRY_USERNAME }}
-      #   run: |
-      #     az acr manifest metadata list --only-show-errors --registry ${AZ_REGISTRY_NAME} --name ${AZ_REGISTRY_REPOSITORY} --username "${AZ_REGISTRY_USERNAME}" --password "${AZ_REGISTRY_PASSWORD}" --orderby time_asc --query "[?tags[0]!=null]" -o json > private-test.json
-      #     cat private-test.json | yq -o tsv '.[].tags | map(select(test(env(AZ_REGISTRY_WHITELIST_REGEX))))' | sort | tee private-test-tags.txt
-      #     echo
-      #     cat private-test-tags.txt | xargs -I% sh -c "echo tag: % && az acr manifest show --only-show-errors --username ${AZ_REGISTRY_USERNAME} --password ${AZ_REGISTRY_PASSWORD} ${AZ_REGISTRY_NAME}.azurecr.io/${AZ_REGISTRY_REPOSITORY}:% | yq -P && echo"
+      - name: Upload ACR manifests artifacts
+        if: steps.prune.outcome == 'success'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.AZ_REG_ARTIFACTS_NAME }}
+          retention-days: 30
+          path: |
+            private*manifests*
