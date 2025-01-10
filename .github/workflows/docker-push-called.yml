@@ -54,7 +54,7 @@ jobs:
         include:
           - AZ_REG_REPOSITORY: alp-data-node/alp-perseus-white-rabbit
             DOCKER_BUILD_CONTEXT_PATH: .
-            DOCKER_BUILD_FILE_PATH: ./dataflow-gen-base/Dockerfile
+            DOCKER_BUILD_FILE_PATH: ./Dockerfile
 
     steps:
       - uses: actions/checkout@v4
@@ -78,7 +78,6 @@ jobs:
           echo AZ_REG_REPOSITORY=${{ matrix.AZ_REG_REPOSITORY }} | tee -a $GITHUB_ENV | tee -a $GITHUB_OUTPUT | tee -a $GITHUB_STEP_SUMMARY
           echo DOCKER_BUILD_CONTEXT_PATH=${{ matrix.DOCKER_BUILD_CONTEXT_PATH }} | tee -a $GITHUB_ENV | tee -a $GITHUB_OUTPUT | tee -a $GITHUB_STEP_SUMMARY
           echo DOCKER_BUILD_FILE_PATH=${{ matrix.DOCKER_BUILD_FILE_PATH }} | tee -a $GITHUB_ENV | tee -a $GITHUB_OUTPUT | tee -a $GITHUB_STEP_SUMMARY
-          echo DOCKER_BUILD_TAGS=${{ matrix.DOCKER_BUILD_TAGS }} | tee -a $GITHUB_ENV | tee -a $GITHUB_OUTPUT | tee -a $GITHUB_STEP_SUMMARY
 
       - name: Login to ACR
         uses: docker/login-action@v3
