@@ -86,7 +86,25 @@ jobs:
           platforms: ${{ steps.setup.outputs.DOCKER_BUILD_PLATFORMS }}
           push: ${{ steps.setup.outputs.DOCKER_BUILD_PUSH_BOOL_STR }}
           tags: ${{ matrix.DOCKER_BUILD_TAGS }}
+      - name: 'Login to GitHub Container Registry'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{github.actor}}
+          password: ${{secrets.GITHUB_TOKEN}}
+          
+      - name: Build and Push
+        id: build-push2
+        uses: docker/build-push-action@v6
+        with:
+          builder: ${{ steps.builder.outputs.name }}
+          context: ${{ matrix.DOCKER_BUILD_CONTEXT_PATH }}
+          file: ${{ matrix.DOCKER_BUILD_FILE_PATH }}
+          platforms: ${{ steps.setup.outputs.DOCKER_BUILD_PLATFORMS }}
+          push: ${{ steps.setup.outputs.DOCKER_BUILD_PUSH_BOOL_STR }}
+          tags: ghcr.io/data2evidence/${{ vars.AZ_REGISTRY_REPOSITORY }}:develop
 
+          
       # - name: Prune tagged images
       #   if: env.GIT_BRANCH_NAME == 'master' || github.event_name == 'workflow_dispatch' || vars.DOCKER_BUILD_DEBUG == 'true'
       #   env:
