@@ -20,10 +20,6 @@ on:
         description: Enter BranchName
         required: true
         type: string
-      DOCKER_IMAGE_TAG_NAME:
-        description: Enter Tag name for docker image
-        required: true
-        type: string
 
 concurrency:
   group: ${{ github.event.inputs.GIT_BRANCH_NAME || github.head_ref || github.ref_name }}-${{ github.event_name }}-docker-build
@@ -73,14 +69,7 @@ jobs:
           fi
 
           if [ $GIT_BRANCH_NAME == "master" ]; then
-            DOCKER_IMG_TAG_NAME=master
-          elif [ $GITHUB_EVENT_NAME = "workflow_dispatch" ]; then
-            DOCKER_IMG_TAG_NAME=${{ github.event.inputs.DOCKER_IMAGE_TAG_NAME }}
-          elif [ $DOCKER_BUILD_PUSH_BOOL_OVERRIDE = true ]; then
-            DOCKER_IMG_TAG_NAME=$GIT_BRANCH_NAME
-            if [[ $GIT_BRANCH_NAME = */* ]]; then
-              DOCKER_IMG_TAG_NAME=$(printf "%s" "$GIT_BRANCH_NAME" | awk -F '/' '{print $2}')
-            fi 
+            DOCKER_IMG_TAG_NAME=master 
           else
             DOCKER_IMG_TAG_NAME=$(echo $(git rev-parse --short HEAD))
           fi
@@ -126,7 +115,7 @@ jobs:
           file: ${{ matrix.DOCKER_BUILD_FILE_PATH }}
           platforms: ${{ steps.setup.outputs.DOCKER_BUILD_PLATFORMS }}
           push: ${{ steps.setup.outputs.DOCKER_BUILD_PUSH_BOOL_STR }}
-          tags: ghcr.io/data2evidence/${{ vars.AZ_REGISTRY_REPOSITORY }}:develop
+          tags: ghcr.io/data2evidence/${{ vars.AZ_REGISTRY_REPOSITORY }}:master
 
           
       # - name: Prune tagged images
