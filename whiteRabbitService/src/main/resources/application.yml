@@ -13,9 +13,9 @@ spring:
       max-file-size: 20MB
       max-request-size: 20MB
   datasource:
-    url: jdbc:postgresql://localhost:5432/shared
-    username: white_rabbit
-    password: password
+    url: jdbc:postgresql://${PG__HOST}:${PG__PORT}/${PG__DB_NAME}?currentSchema=white_rabbit
+    username: ${PG_ADMIN_USER}
+    password: ${PG_ADMIN_PASSWORD}
   jpa:
     properties:
       hibernate:
@@ -25,12 +25,12 @@ spring:
       ddl-auto: update
     show-sql: true
 
-files-manager-url: http://localhost:10500/files-manager
+files-manager-url: http://${PERSEUS__FILES_MANAGER_HOST}:33001/files-manager
 
 fake-data-db:
   db-type: PostgreSQL
-  server: localhost
-  port: 5432
+  server: ${PG__DB_NAME}
+  port: ${PG__PORT}
   database: source
-  user: source
-  password: password
+  user: ${PG_ADMIN_USER}
+  password: ${PG_ADMIN_PASSWORD}

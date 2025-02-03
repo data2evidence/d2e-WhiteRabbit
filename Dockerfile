@@ -1,4 +1,4 @@
-FROM openjdk:17 as build
+FROM openjdk:17 AS build
 
 WORKDIR /workspace/app
 
