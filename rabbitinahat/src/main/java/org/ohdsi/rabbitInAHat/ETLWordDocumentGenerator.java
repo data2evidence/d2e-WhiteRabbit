@@ -19,6 +19,8 @@ package org.ohdsi.rabbitInAHat;
 
 import java.awt.Color;
 import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -55,8 +57,8 @@ public class ETLWordDocumentGenerator {
             addSourceTablesAppendix(document, etl);
         }
 
-        // Write the document to the ByteArrayOutputStream instead of a file
-        document.write(outputStream);
+		// Write document to file
+		document.write(new FileOutputStream(new File(filename)));
         document.close(); // Close the document to avoid memory leaks
         
     } catch (FileNotFoundException e) {
