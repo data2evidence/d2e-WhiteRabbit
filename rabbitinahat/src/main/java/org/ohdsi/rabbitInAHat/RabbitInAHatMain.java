@@ -38,6 +38,8 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 import javax.swing.BoxLayout;
 import javax.swing.ButtonGroup;
@@ -65,6 +67,9 @@ import org.ohdsi.rabbitInAHat.dataModel.ETL;
 import org.ohdsi.rabbitInAHat.dataModel.Field;
 import org.ohdsi.rabbitInAHat.dataModel.StemTableFactory;
 import org.ohdsi.rabbitInAHat.dataModel.Table;
+import org.ohdsi.rabbitInAHat.ETLWordDocumentGenerator;
+import org.ohdsi.rabbitInAHat.ObjectExchange;
+import org.ohdsi.rabbitInAHat.dataModel.ETL.FileFormat;
 import org.ohdsi.utilities.Version;
 
 /**
@@ -208,6 +213,22 @@ public class RabbitInAHatMain implements ResizeListener {
 
 		   if (args[0].equals("--scanReport")) {
 			   doOpenScanReport(args[1]);
+		   }
+
+		   if (args[0].equals("--generateWordReport")) {
+			String inputString = args[1];
+			String outputString = args[2];
+			System.out.println(args[1]);
+			System.out.println(args[2]);
+
+			System.out.println("Generating ETL word report from: " + inputString);
+			Path path = Paths.get(inputString);
+        	Path absolutePath = path.toAbsolutePath();
+			System.out.println(absolutePath.toString());
+			ETL etl_ = ETL.fromFile(absolutePath.toString(), FileFormat.Json);
+			ObjectExchange.etl = etl_;
+			ETLWordDocumentGenerator.generate(ObjectExchange.etl, "report.docx");
+			System.out.println("Word report generated: " + outputString);
 		   }
 		}
 	}
