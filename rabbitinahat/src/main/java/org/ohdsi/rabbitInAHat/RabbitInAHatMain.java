@@ -229,6 +229,7 @@ public class RabbitInAHatMain implements ResizeListener {
 			ObjectExchange.etl = etl_;
 			ETLWordDocumentGenerator.generate(ObjectExchange.etl, "report.docx");
 			System.out.println("Word report generated: " + outputString);
+			System.exit(0);
 		   }
 		}
 	}
