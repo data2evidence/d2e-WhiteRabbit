@@ -26,9 +26,10 @@ RUN apt-get update && apt-get install -y \
     xvfb
 
 ARG JAR_FILE=/workspace/app/whiteRabbitService/target/*.jar
-
+ARG DIST=/workspace/app/dist
 COPY --chown=docker:docker --chmod=711 init.sh .
 COPY --from=build ${JAR_FILE} app.jar
+COPY --from=build ${DIST} dist
 
 # COPY whiteRabbitService/target/*.jar app.jar # required for local development
 
