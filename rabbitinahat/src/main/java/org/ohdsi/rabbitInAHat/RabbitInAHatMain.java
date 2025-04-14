@@ -223,7 +223,7 @@ public class RabbitInAHatMain implements ResizeListener {
 
 			System.out.println("Generating ETL word report from: " + inputString);
 			Path path = Paths.get(inputString);
-        	Path absolutePath = path.toAbsolutePath();
+			Path absolutePath = path.toAbsolutePath();
 			System.out.println(absolutePath.toString());
 			ETL etl_ = ETL.fromFile(absolutePath.toString(), FileFormat.Json);
 			ObjectExchange.etl = etl_;
